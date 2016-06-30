@@ -10,8 +10,6 @@ reads in all json files from a folder as python dictionaries
 import os
 import json
 import pandas as pd
-import re
-#from pprint import pprint
 # constants
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = os.path.abspath(os.path.join(CURRENT_DIR, 'data'))
@@ -51,13 +49,21 @@ meta_df=pd.DataFrame(meta)
 mojo_df=pd.DataFrame(mojo)
 
 both_df=pd.merge(mojo_df,meta_df, on='title',how='left')
+##################
+both_df2=both_df[pd.notnull(both_df['num_critic_reviews'])]
+both_df2.reset_index(drop=True,inplace=True)
+critic_reviews=pd.DataFrame(data=both_df2['num_critic_reviews'].str.split(',').tolist(),columns=['critic_positive','critic_negative','critic_neutral','critic_total'])
+critic_reviews=critic_reviews.replace('\[|\]','',regex=True)
+both_df3=both_df2.join(critic_reviews)
+critic_reviews1=both_df3[['title','critic_positive','critic_negative','critic_neutral','critic_total']]
+##################
+both_df2=both_df[pd.notnull(both_df['num_user_reviews'])]
+user_reviews=pd.DataFrame(both_df2['num_user_reviews'].str.split(',').tolist(),columns=['user_positive','user_negative','user_neutral','user_total'])
+user_reviews=user_reviews.replace('\[|\]','',regex=True)
+both_df3=both_df2.join(user_reviews)
+user_reviews1=both_df3[['title','user_positive','user_negative','user_neutral','user_total']]
 
-both_df['num_critic_reviews']=both_df['num_critic_reviews'].str.replace(r'\[|\]','')
-z=both_df['num_critic_reviews'].str.split(',').tolist()
-x=pd.DataFrame(both_df['num_critic_reviews'].str.split(',').tolist(),columns=['positive','negative','neutral','total'])
-
-both_df.sort('release_date_wide').groupby('director_x').count()['domestic_gross'].mean()
-
+#######################
 both_df['release_date_wide']=both_df['release_date_wide'].astype('datetime64[ns]')
 abc=both_df.groupby('director_x')
 for i in abc:
@@ -72,10 +78,16 @@ for i in abc:
             df.ix[z,'rolling_mean']= df.ix[(z+1):,'domestic_gross'].mean()
     else:
         df=i[1].copy()
+        df['rolling_mean']='NA'
         #break
     try:
-        new_df3=pd.concat([new_df3,df])
+        new_df=pd.concat([new_df,df])
     except:
-        new_df3=df
+        new_df=df
+    rolling_avg=new_df[['title','rolling_mean']]
+##############
+final_df=pd.merge(both_df,critic_reviews1,on='title',how='left')
+final_df=pd.merge(final_df,user_reviews1,on='title',how='left')
+final_df=pd.merge(final_df,rolling_avg,on='title',how='left')
 
-        
+final_df.columns
