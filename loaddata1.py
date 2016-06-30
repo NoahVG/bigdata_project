@@ -58,6 +58,7 @@ both_df3=both_df2.join(critic_reviews)
 critic_reviews1=both_df3[['title','critic_positive','critic_negative','critic_neutral','critic_total']]
 ##################
 both_df2=both_df[pd.notnull(both_df['num_user_reviews'])]
+both_df2.reset_index(drop=True,inplace=True)
 user_reviews=pd.DataFrame(both_df2['num_user_reviews'].str.split(',').tolist(),columns=['user_positive','user_negative','user_neutral','user_total'])
 user_reviews=user_reviews.replace('\[|\]','',regex=True)
 both_df3=both_df2.join(user_reviews)
